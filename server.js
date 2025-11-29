@@ -17,6 +17,7 @@ const DB_CONFIG = {
   database: process.env.DB_NAME || "scrapers",
 };
 
+const DATA_SERHC = 'show_description';
 const SOURCE_TABLE = "apple_podcasts.profiles";
 const SOURCE_NAME = SOURCE_TABLE.replace(/\.profiles$/, "");
 
@@ -35,6 +36,12 @@ function parseContacts(text) {
   const phones = new Set();
   const urls = new Set();
 
+  const sanitizePhone = (phone) =>
+    phone
+      .replace(/[()]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
   (content.match(EMAIL_REGEX) || []).forEach((match) =>
     emails.add(normalizeMatch(match))
   );
@@ -42,9 +49,10 @@ function parseContacts(text) {
   (content.match(PHONE_REGEX) || [])
     .map(normalizeMatch)
     .forEach((match) => {
-      const digits = match.replace(/\D/g, "");
+      const cleanedPhone = sanitizePhone(match);
+      const digits = cleanedPhone.replace(/\D/g, "");
       if (digits.length >= 7) {
-        phones.add(match);
+        phones.add(cleanedPhone);
       }
     });
 
@@ -73,7 +81,7 @@ async function ensureContactsTable(client) {
 }
 
 async function fetchProfiles(client) {
-  const query = `SELECT id, show_description AS input FROM ${SOURCE_TABLE}`;
+  const query = `SELECT id, ${DATA_SERHC} AS input FROM ${SOURCE_TABLE}`;
   const { rows } = await client.query(query);
   return rows;
 }
@@ -164,3 +172,5 @@ export {
   parseContacts,
   buildContactRows,
 };
+
+main()
